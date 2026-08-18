@@ -1,0 +1,52 @@
+@prefix peh: <https://seanchatmangpt.github.io/Platform-Engineer-s-Handbook/ontology#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix odrl: <http://www.w3.org/ns/odrl/2/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+peh: a owl:Ontology ;
+  dcterms:title "Platform Engineer's Handbook Production Ontology" ;
+  dcterms:description "Canonical semantic model for the production platform reference architecture." .
+
+peh:PlatformProduct a owl:Class ; rdfs:subClassOf dcat:Resource .
+peh:Capability a owl:Class ; rdfs:subClassOf skos:Concept .
+peh:Service a owl:Class ; rdfs:subClassOf dcat:DataService .
+peh:Team a owl:Class ; rdfs:subClassOf foaf:Group .
+peh:Intent a owl:Class ; rdfs:subClassOf prov:Entity .
+peh:AdmissionDecision a owl:Class ; rdfs:subClassOf prov:Entity .
+peh:Actuation a owl:Class ; rdfs:subClassOf prov:Activity .
+peh:Receipt a owl:Class ; rdfs:subClassOf prov:Entity .
+peh:Control a owl:Class ; rdfs:subClassOf odrl:Rule .
+peh:SLO a owl:Class ; rdfs:subClassOf sosa:ObservableProperty .
+peh:CostMetric a owl:Class ; rdfs:subClassOf qudt:Quantity .
+peh:Projection a owl:Class ; rdfs:subClassOf prov:Entity .
+peh:ArchitectureDecision a owl:Class ; rdfs:subClassOf prov:Entity .
+
+peh:ownedBy a owl:ObjectProperty ; rdfs:domain peh:Service ; rdfs:range peh:Team .
+peh:requestsCapability a owl:ObjectProperty ; rdfs:domain peh:Intent ; rdfs:range peh:Capability .
+peh:evaluatedBy a owl:ObjectProperty ; rdfs:domain peh:AdmissionDecision ; rdfs:range peh:Control .
+peh:authorizes a owl:ObjectProperty ; rdfs:domain peh:AdmissionDecision ; rdfs:range peh:Actuation .
+peh:receipts a owl:ObjectProperty ; rdfs:domain peh:Receipt ; rdfs:range peh:Actuation .
+peh:derivedFrom a owl:ObjectProperty ; rdfs:domain peh:Projection ; rdfs:range prov:Entity .
+peh:subjectDigest a owl:DatatypeProperty ; rdfs:range xsd:string .
+peh:decision a owl:DatatypeProperty ; rdfs:range xsd:string .
+peh:replayKey a owl:DatatypeProperty ; rdfs:range xsd:string .
+
+peh:IntentShape a sh:NodeShape ;
+  sh:targetClass peh:Intent ;
+  sh:property [ sh:path peh:subjectDigest ; sh:minCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path peh:requestsCapability ; sh:minCount 1 ] .
+
+peh:ReceiptShape a sh:NodeShape ;
+  sh:targetClass peh:Receipt ;
+  sh:property [ sh:path peh:subjectDigest ; sh:minCount 1 ; sh:datatype xsd:string ] ;
+  sh:property [ sh:path peh:replayKey ; sh:minCount 1 ; sh:datatype xsd:string ] .

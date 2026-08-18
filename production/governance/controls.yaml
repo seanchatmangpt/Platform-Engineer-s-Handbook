@@ -1,0 +1,119 @@
+schema_version: 1
+kind: EnterprisePlatformControlCatalog
+frameworks:
+  architecture: [TOGAF]
+  security: [NIST-CSF, NIST-800-53, zero-trust]
+  software_supply_chain: [SLSA, SBOM, provenance, signing]
+  reliability: [SRE, error-budgets]
+  delivery: [DORA]
+  cost: [FinOps]
+  policy: [OPA, admission-control]
+control_families:
+  identity:
+    controls:
+      - id: IAM-001
+        requirement: federated-human-identity
+        enforcement: deny
+      - id: IAM-002
+        requirement: short-lived-workload-identity
+        enforcement: deny
+      - id: IAM-003
+        requirement: no-shared-production-credentials
+        enforcement: deny
+  change:
+    controls:
+      - id: CHG-001
+        requirement: immutable-subject-digest
+        enforcement: deny
+      - id: CHG-002
+        requirement: idempotency-key
+        enforcement: deny
+      - id: CHG-003
+        requirement: rollback-or-recovery-plan
+        enforcement: deny
+      - id: CHG-004
+        requirement: production-change-receipt
+        enforcement: deny
+  supply_chain:
+    controls:
+      - id: SSC-001
+        requirement: sbom-present
+        enforcement: deny
+      - id: SSC-002
+        requirement: provenance-present
+        enforcement: deny
+      - id: SSC-003
+        requirement: signed-production-artifact
+        enforcement: deny
+      - id: SSC-004
+        requirement: approved-registry-and-digest
+        enforcement: deny
+  runtime:
+    controls:
+      - id: RUN-001
+        requirement: non-root-default
+        enforcement: deny
+      - id: RUN-002
+        requirement: resource-requests-and-limits
+        enforcement: deny
+      - id: RUN-003
+        requirement: default-deny-network-policy
+        enforcement: deny
+      - id: RUN-004
+        requirement: workload-owner-and-tier
+        enforcement: deny
+  reliability:
+    controls:
+      - id: REL-001
+        requirement: slo-defined
+        enforcement: deny-production
+      - id: REL-002
+        requirement: error-budget-policy
+        enforcement: deny-production
+      - id: REL-003
+        requirement: restore-proof-current
+        enforcement: deny-tier-0-and-tier-1
+  cost:
+    controls:
+      - id: FIN-001
+        requirement: cost-owner
+        enforcement: deny
+      - id: FIN-002
+        requirement: allocation-labels
+        enforcement: deny
+      - id: FIN-003
+        requirement: budget-evaluation
+        enforcement: warn-or-deny-by-tier
+  data:
+    controls:
+      - id: DAT-001
+        requirement: classification
+        enforcement: deny
+      - id: DAT-002
+        requirement: retention-policy
+        enforcement: deny
+      - id: DAT-003
+        requirement: encryption-in-transit-and-at-rest
+        enforcement: deny
+  ai:
+    controls:
+      - id: AI-001
+        requirement: model-and-context-identity
+        enforcement: deny
+      - id: AI-002
+        requirement: no-direct-production-actuation
+        enforcement: deny
+      - id: AI-003
+        requirement: intent-policy-evaluation
+        enforcement: deny
+      - id: AI-004
+        requirement: prompt-output-and-decision-evidence
+        enforcement: deny
+exceptions:
+  required_fields: [control_id, owner, scope, rationale, compensating_controls, expiry, approver]
+  maximum_duration_days: 90
+  expiry_behavior: deny
+assurance:
+  evidence_required_for_control_state: true
+  stale_evidence_behavior: unknown
+  control_pass_without_execution: forbidden

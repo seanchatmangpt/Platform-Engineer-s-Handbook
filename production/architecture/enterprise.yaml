@@ -1,0 +1,173 @@
+schema_version: 1
+kind: EnterprisePlatformArchitecture
+metadata:
+  name: platform-engineering-production-reference
+  intent: "Convert the 14 handbook chapters from tutorial assets into one governed production platform."
+  status: proposed
+architecture_method:
+  framework: TOGAF
+  lifecycle:
+    - phase: Preliminary
+      outputs: [principles, governance-model, architecture-capability]
+    - phase: A
+      outputs: [vision, stakeholders, value-streams, target-outcomes]
+    - phase: B
+      outputs: [business-capabilities, operating-model, product-model]
+    - phase: C
+      outputs: [application-services, data-contracts, integration-contracts]
+    - phase: D
+      outputs: [runtime, network, identity, observability, supply-chain]
+    - phase: E
+      outputs: [solution-building-blocks, transition-architectures]
+    - phase: F
+      outputs: [roadmap, increments, dependency-graph]
+    - phase: G
+      outputs: [architecture-contracts, compliance-evidence, exceptions]
+    - phase: H
+      outputs: [change-signals, drift-detection, re-admission]
+principles:
+  - id: P01
+    name: platform-as-product
+    statement: Every capability has an owner, consumer, contract, SLO, lifecycle, and evidence.
+  - id: P02
+    name: declarative-source-of-truth
+    statement: Desired state is declared; imperative actions are adapters behind admission boundaries.
+  - id: P03
+    name: zero-ambient-authority
+    statement: Humans, agents, portals, workflows, and hooks produce intents; none receive implicit execution authority.
+  - id: P04
+    name: policy-before-actuation
+    statement: Security, compliance, cost, resilience, and ownership policy are evaluated before state-changing operations.
+  - id: P05
+    name: evidence-by-default
+    statement: Every admitted state transition produces identity-bound machine-readable evidence.
+  - id: P06
+    name: open-contracts
+    statement: Platform capabilities are exposed through versioned, documented, machine-readable contracts.
+  - id: P07
+    name: reversible-by-default
+    statement: Prefer preview, plan, diff, dry-run, canary, and rollback paths before irreversible actions.
+  - id: P08
+    name: generated-projections
+    statement: Portals, pipelines, manifests, dashboards, and starter kits are projections of canonical models, not independent authorities.
+architecture_domains:
+  business:
+    capabilities:
+      - platform-product-management
+      - platform-architecture-governance
+      - developer-experience
+      - onboarding-and-tenancy
+      - service-ownership
+      - security-and-risk
+      - reliability-engineering
+      - finops
+      - ai-governance
+    value_streams:
+      - idea-to-service
+      - service-to-production
+      - incident-to-recovery
+      - change-to-evidence
+  application:
+    services:
+      - service-catalog
+      - identity-broker
+      - policy-decision-point
+      - policy-enforcement-point
+      - provisioning-api
+      - delivery-orchestrator
+      - infrastructure-control-plane
+      - observability-gateway
+      - cost-control-plane
+      - resilience-control-plane
+      - ai-intent-router
+      - evidence-ledger
+    interfaces: [portal, cli, openapi, asyncapi, mcp, a2a, gitops]
+  data:
+    canonical_records:
+      - platform-product
+      - team
+      - service
+      - environment
+      - workload
+      - infrastructure-resource
+      - policy
+      - control
+      - intent
+      - decision
+      - deployment
+      - incident
+      - slo
+      - cost-allocation
+      - evidence-receipt
+    standards:
+      - PROV-O
+      - DCAT
+      - DCTERMS
+      - SKOS
+      - SHACL
+      - ODRL
+      - FOAF
+      - QUDT
+      - SOSA
+      - OCEL
+  technology:
+    planes:
+      experience: [developer-portal, cli, api-gateway, mcp-gateway, a2a-gateway]
+      control: [identity, policy, catalog, gitops, infrastructure, delivery, evidence]
+      runtime: [kubernetes, service-mesh, workload-identity, secrets, dns, ingress]
+      telemetry: [opentelemetry, metrics, logs, traces, events, cost]
+      resilience: [slo, error-budget, backup, restore, chaos, failover]
+      supply_chain: [source, build, sbom, provenance, signing, registry, admission]
+operating_model:
+  team_topologies:
+    platform_team:
+      accountability: "Own platform product and control planes."
+    stream_aligned_team:
+      accountability: "Own business services and consume platform contracts."
+    enabling_team:
+      accountability: "Accelerate adoption without becoming a permanent dependency."
+    complicated_subsystem_team:
+      accountability: "Own specialist subsystems with explicit APIs and SLOs."
+  decision_rights:
+    enterprise_architecture: architecture-principles-and-exceptions
+    platform_product: capability-roadmap-and-service-levels
+    security: risk-policy-and-break-glass
+    sre: reliability-policy-and-error-budgets
+    finops: allocation-budgets-and-unit-economics
+    service_owner: application-risk-and-business-priority
+  change_classes:
+    reversible: auto-admit-when-controls-pass
+    progressive: require-observation-window-and-rollback
+    destructive: require-explicit-authority-and-recovery-proof
+    break_glass: time-bounded-two-party-authority-and-post-event-review
+production_topology:
+  environments:
+    - management
+    - development
+    - staging
+    - production
+    - recovery
+  isolation:
+    management_plane_separate: true
+    production_identity_separate: true
+    production_credentials_non_exportable: true
+    tenant_boundaries: namespace-and-policy
+  regions:
+    strategy: active-active-or-active-passive-by-service-tier
+    control_plane: multi-zone
+    recovery: independent-failure-domain
+architecture_governance:
+  required_artifacts:
+    - architecture-decision-record
+    - service-contract
+    - threat-model
+    - data-classification
+    - slo
+    - runbook
+    - rollback-plan
+    - cost-owner
+    - evidence-policy
+  conformance:
+    mode: continuous
+    exception_fields: [owner, rationale, scope, compensating-controls, expiry, approver]
+    expired_exception_behavior: refuse-change

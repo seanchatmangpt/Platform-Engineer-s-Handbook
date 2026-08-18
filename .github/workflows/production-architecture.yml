@@ -1,0 +1,30 @@
+name: production-architecture
+
+on:
+  pull_request:
+    paths:
+      - 'production/**'
+      - 'PRODUCTION.md'
+      - '.github/workflows/production-architecture.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'production/**'
+      - 'PRODUCTION.md'
+      - '.github/workflows/production-architecture.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify production architecture closure
+        run: python3 production/verify.py
+      - name: Run production architecture tests
+        run: python3 -m unittest production.tests.test_production -v

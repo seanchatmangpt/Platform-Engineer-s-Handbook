@@ -1,0 +1,65 @@
+schema_version: 1
+kind: ChapterToProductionCapabilityMap
+chapters:
+  Ch01:
+    source: "Laying the Groundwork"
+    production_capabilities: [platform-product-management, architecture-governance, team-topologies, release-governance, secrets-bootstrap]
+    production_evidence: [product-contract, architecture-principles, ownership-map, release-receipt]
+  Ch02:
+    source: "Scalable Platform Runtime"
+    production_capabilities: [multi-environment-runtime, gitops, service-mesh, tenant-isolation, infrastructure-as-code]
+    production_evidence: [desired-state-digest, reconciliation-status, network-policy-result, runtime-health]
+  Ch03:
+    source: "Securing Platform Access"
+    production_capabilities: [federated-identity, workload-identity, rbac-abac, policy-enforcement, tls, zero-trust]
+    production_evidence: [identity-claims, authorization-decision, policy-result, certificate-status]
+  Ch04:
+    source: "Embedding Observability"
+    production_capabilities: [otel-ingestion, metrics, logs, traces, event-correlation, telemetry-slos]
+    production_evidence: [telemetry-coverage, alert-evaluation, trace-link, deployment-observation]
+  Ch05:
+    source: "Evaluate the User Experience"
+    production_capabilities: [developer-journeys, friction-measurement, dora, self-service, golden-paths]
+    production_evidence: [journey-result, lead-time, deployment-frequency, change-failure-rate, mttr]
+  Ch06:
+    source: "Developer Portal"
+    production_capabilities: [catalog, docs, discovery, access-request, scaffolding-ui]
+    production_evidence: [catalog-registration, owner-binding, contract-link, access-decision]
+  Ch07:
+    source: "Self-Service Platform Onboarding"
+    production_capabilities: [tenant-onboarding, team-management, project-bootstrap, audit-trail, idempotency]
+    production_evidence: [tenant-receipt, membership-change, bootstrap-receipt, replay-key]
+  Ch08:
+    source: "CI/CD as a Platform Service"
+    production_capabilities: [build-service, test-service, supply-chain-security, progressive-delivery, rollback]
+    production_evidence: [build-provenance, sbom, test-attestation, deployment-receipt, rollback-receipt]
+  Ch09:
+    source: "Self-Service Infrastructure Management"
+    production_capabilities: [compositions, claims, lifecycle-management, tagging, guardrails]
+    production_evidence: [claim-decision, provider-result, resource-identity, lifecycle-event]
+  Ch10:
+    source: "Publishing Starter Kits"
+    production_capabilities: [service-blueprints, generated-projects, upgrade-policy, drift-detection]
+    production_evidence: [template-version, projection-digest, drift-report, upgrade-receipt]
+  Ch11:
+    source: "Policy-as-Code"
+    production_capabilities: [policy-catalog, policy-tests, admission, compliance-reporting, exception-management]
+    production_evidence: [policy-bundle-digest, decision-log, exception-record, compliance-snapshot]
+  Ch12:
+    source: "Cost Performance Scalability"
+    production_capabilities: [finops, unit-cost, budgets, autoscaling, rightsizing, capacity-management]
+    production_evidence: [allocation-record, budget-decision, scaling-event, capacity-plan]
+  Ch13:
+    source: "Resilience Automation"
+    production_capabilities: [slo-as-code, error-budgets, chaos, backup, restore, dr]
+    production_evidence: [slo-evaluation, chaos-result, backup-receipt, restore-proof, rto-rpo-proof]
+  Ch14:
+    source: "Agentic and AI-Augmented Platforms"
+    production_capabilities: [ai-observation, retrieval, diagnosis, planning, intent-routing, ai-governance]
+    production_evidence: [model-identity, context-digest, proposed-intent, admission-decision, actuation-receipt]
+closure_rules:
+  - every_chapter_has_capability
+  - every_capability_has_owner_and_contract
+  - every_state_change_has_admission_and_receipt
+  - every_projection_has_source_identity
+  - every_production_capability_has_failure_and_recovery_path
