@@ -25,12 +25,15 @@ cp -R "${DFCM}/consumer/dfcm/." "${PROD}/generated/dfcm/"
 cp "${DFCM}/consumer/dfcm/runtime.py" "${PROD}/runtime/dfcm_generated.py"
 ( cd "${PROD}/generated/dfcm" && python3 verify.py )
 
-# Construct the complete provider deployment graphs independently so provider
-# projections cannot overwrite one another. bblock enable is construction only:
-# it writes plans, pack locks, directories, and receipts; it never actuates cloud.
+# Construct provider deployment graphs independently. This is CONSTRUCT only:
+# bblock writes plans, pack locks, local directories, and receipts; it never
+# calls a cloud API or acquires platform DO authority.
 for provider in aws gcp; do
   root="${PROD}/generated/deployment/${provider}"
   mkdir -p "${root}"
-  ( cd "${root}" && "${GGEN_BIN}" bblock validate && "${GGEN_BIN}" bblock plan fortune5-complete "${provider}" && "${GGEN_BIN}" bblock enable fortune5-complete "${provider}" )
+  ( cd "${root}" && \
+    "${GGEN_BIN}" bblock validate && \
+    "${GGEN_BIN}" bblock plan --group-id fortune5-complete --provider "${provider}" && \
+    "${GGEN_BIN}" bblock enable --group-id fortune5-complete --provider "${provider}" )
 done
 python3 "${HERE}/verify_generated.py"
