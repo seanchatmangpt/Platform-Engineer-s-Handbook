@@ -1,0 +1,21 @@
+---
+to: generated/platform-adapters.json
+force: true
+sparql:
+  adapters: |
+    PREFIX f5: <http://seanchatmangpt.github.io/packs/fortune5-architecture#>
+    PREFIX peh: <https://seanchatmangpt.github.io/Platform-Engineer-s-Handbook/production#>
+    SELECT ?id ?chapter ?operation ?path ?group WHERE {
+      ?c a peh:PlatformCapability ; f5:capabilityId ?id ; peh:chapter ?chapter ; peh:operation ?operation ; peh:implementationPath ?path ; peh:deploymentGroup ?group .
+    } ORDER BY ?chapter
+---
+{
+  "schema": "ggen.platform.adapter-catalog.v1",
+  "actuation": "BRCE_ONLY",
+  "ambient_execution_authority": false,
+  "providers": ["aws", "gcp"],
+  "deployment_bundle": "fortune5-complete",
+  "adapters": [
+{% for row in adapters %}    {"capability_id":"{{ row.id }}","chapter":"{{ row.chapter }}","operation":"{{ row.operation }}","implementation_path":"{{ row.path }}","deployment_group":"{{ row.group }}"}{% if not loop.last %},{% endif %}
+{% endfor %}  ]
+}

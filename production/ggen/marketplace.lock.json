@@ -14,18 +14,10 @@
     "version": "v26.8.10"
   },
   "packs": {
-    "dfcm-pack": {
-      "mode": "project",
-      "tree": "1013f463a6ade98ed3e93d6d64e5826a42776df1"
-    },
-    "fortune5-architecture-pack": {
-      "mode": "consumer",
-      "tree": "bf7f9725ed4062c3d5fc0dd13ba6acab34177811"
-    },
-    "gdmcp-pack": {
-      "mode": "consumer",
-      "tree": "9b3e867b8a29beaa7ed9053e12cdc056a78f229c"
-    }
+    "dfcm-pack": {"mode": "project", "tree": "1013f463a6ade98ed3e93d6d64e5826a42776df1"},
+    "fortune5-architecture-pack": {"mode": "consumer", "tree": "bf7f9725ed4062c3d5fc0dd13ba6acab34177811"},
+    "fortune5-deployment-blocks-pack": {"mode": "bblock-catalog", "tree": "05806ff3edc9c71bb8dc6fb4aff3ee99f2790196"},
+    "gdmcp-pack": {"mode": "consumer", "tree": "9b3e867b8a29beaa7ed9053e12cdc056a78f229c"}
   },
   "schema_version": 1
 }

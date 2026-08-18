@@ -16,9 +16,6 @@ rm -rf "${PROD}/generated" "${PROD}/docs" "${PROD}/src/gdmcp"
 rm -f "${PROD}/runtime/generated_platform.py" "${PROD}/runtime/dfcm_generated.py"
 ( cd "${PROD}" && "${GGEN_BIN}" sync run )
 
-# Manufacture the canonical DfCM/BRCE control plane from the already-qualified
-# marketplace project. Its generated consequences are copied into this consumer;
-# the marketplace pack remains source authority and is never edited here.
 DFCM="${MARKETPLACE}/packs/dfcm-pack"
 rm -rf "${DFCM}/consumer"
 ( cd "${DFCM}" && "${GGEN_BIN}" sync run )
@@ -26,8 +23,14 @@ rm -rf "${DFCM}/consumer"
 mkdir -p "${PROD}/runtime" "${PROD}/generated/dfcm"
 cp -R "${DFCM}/consumer/dfcm/." "${PROD}/generated/dfcm/"
 cp "${DFCM}/consumer/dfcm/runtime.py" "${PROD}/runtime/dfcm_generated.py"
-
-# Exercise the generated DfCM verifier at its own consumer boundary before the
-# platform-specific verifier is allowed to crown the combined consequence tree.
 ( cd "${PROD}/generated/dfcm" && python3 verify.py )
+
+# Construct the complete provider deployment graphs independently so provider
+# projections cannot overwrite one another. bblock enable is construction only:
+# it writes plans, pack locks, directories, and receipts; it never actuates cloud.
+for provider in aws gcp; do
+  root="${PROD}/generated/deployment/${provider}"
+  mkdir -p "${root}"
+  ( cd "${root}" && "${GGEN_BIN}" bblock validate && "${GGEN_BIN}" bblock plan fortune5-complete "${provider}" && "${GGEN_BIN}" bblock enable fortune5-complete "${provider}" )
+done
 python3 "${HERE}/verify_generated.py"
