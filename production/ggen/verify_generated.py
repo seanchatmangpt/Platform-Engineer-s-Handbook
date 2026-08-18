@@ -49,6 +49,64 @@ def deployment_paths(provider):
     ]
 
 
+def _canonical_pack_lock(path: Path) -> bytes:
+    """Digest lock semantics while preserving raw installation chronology as evidence.
+
+    ggen's PackLockfile writes `updated_at = Utc::now()` and each LockedPack writes
+    `installed_at = Utc::now()`. Those fields prove invocation chronology but are not
+    pack-resolution identity. No other field is normalized.
+    """
+    payload = json.loads(path.read_text(encoding='utf-8'))
+    if isinstance(payload, dict):
+        payload.pop('updated_at', None)
+        packs = payload.get('packs')
+        if isinstance(packs, dict):
+            for locked in packs.values():
+                if isinstance(locked, dict):
+                    locked.pop('installed_at', None)
+    return json.dumps(payload, sort_keys=True, separators=(',', ':')).encode('utf-8')
+
+
+def _pack_lock_semantic_digest(provider: str) -> str:
+    path = deployment_paths(provider)[0]
+    return hashlib.sha256(_canonical_pack_lock(path)).hexdigest() if path.is_file() else 'MISSING'
+
+
+def _check_provider_lock(provider, errors):
+    path = deployment_paths(provider)[0]
+    if not path.is_file():
+        return
+    try:
+        payload = json.loads(path.read_text(encoding='utf-8'))
+    except Exception as exc:
+        errors.append(f'pack-lock-json-invalid:{provider}:{exc}')
+        return
+    if not isinstance(payload, dict):
+        errors.append(f'pack-lock-not-object:{provider}')
+        return
+    if not payload.get('updated_at'):
+        errors.append(f'pack-lock-chronology-missing:{provider}:updated_at')
+    if not str(payload.get('ggen_version', '')).strip():
+        errors.append(f'pack-lock-ggen-version-missing:{provider}')
+    packs = payload.get('packs')
+    if not isinstance(packs, dict) or not packs:
+        errors.append(f'pack-lock-empty:{provider}')
+        return
+    for pack_id, locked in packs.items():
+        if not isinstance(locked, dict):
+            errors.append(f'pack-lock-entry-invalid:{provider}:{pack_id}')
+            continue
+        if not str(locked.get('version', '')).strip():
+            errors.append(f'pack-lock-version-missing:{provider}:{pack_id}')
+        if not locked.get('installed_at'):
+            errors.append(f'pack-lock-chronology-missing:{provider}:{pack_id}:installed_at')
+        if not isinstance(locked.get('source'), dict):
+            errors.append(f'pack-lock-source-missing:{provider}:{pack_id}')
+        dependencies = locked.get('dependencies', [])
+        if not isinstance(dependencies, list):
+            errors.append(f'pack-lock-dependencies-invalid:{provider}:{pack_id}')
+
+
 def _check_provider_receipts(provider, errors):
     paths = deployment_paths(provider)
     plan = paths[1]
@@ -147,6 +205,7 @@ def check():
         if 'blake2b' in text:
             errors.append('dfcm-noncanonical-digest:blake2b')
     for provider in ('aws', 'gcp'):
+        _check_provider_lock(provider, errors)
         _check_provider_receipts(provider, errors)
     return errors
 
@@ -157,7 +216,7 @@ def _is_invocation_receipt(path: Path) -> bool:
 
 
 def consequence_files():
-    """Return deterministic generated code/topology only; invocation receipts remain separately required and verified."""
+    """Return deterministic generated code/topology; invocation receipts are separately verified."""
     files = []
     for root in [ROOT/'generated', ROOT/'docs', ROOT/'src/gdmcp']:
         if root.exists():
@@ -168,11 +227,17 @@ def consequence_files():
     return sorted(set(files), key=lambda path: str(path.relative_to(ROOT)))
 
 
+def deterministic_bytes(path: Path) -> bytes:
+    if path.name == 'packs.lock' and 'deployment' in path.relative_to(ROOT).parts:
+        return _canonical_pack_lock(path)
+    return path.read_bytes()
+
+
 def digest():
     h = hashlib.sha256()
     for path in consequence_files():
         rel = str(path.relative_to(ROOT)).encode()
-        data = path.read_bytes()
+        data = deterministic_bytes(path)
         h.update(len(rel).to_bytes(4, 'big'))
         h.update(rel)
         h.update(len(data).to_bytes(8, 'big'))
@@ -189,9 +254,10 @@ def receipt(errors):
         'required_files': len(REQUIRED) + 12,
         'deterministic_consequence_files': len(consequence_files()),
         'deterministic_consequence_digest_sha256': digest(),
+        'provider_pack_lock_semantic_digests': {provider: _pack_lock_semantic_digest(provider) for provider in ('aws', 'gcp')},
         'providers': ['aws', 'gcp'],
         'deployment_bundle': 'fortune5-complete',
-        'replay': 'second manufacture must reproduce deterministic code/topology digest; provider invocation receipts are separately required and verified',
+        'replay': 'second manufacture must reproduce code/topology and pack-lock semantics; raw updated_at/installed_at chronology remains required evidence but is not semantic identity',
         'errors': errors,
     }
 

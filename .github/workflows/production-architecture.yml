@@ -77,47 +77,17 @@ jobs:
       - name: Run production tests
         run: python3 -m unittest production.tests.test_production -v
       - name: Capture deterministic code and topology digest
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 production/ggen/verify_generated.py --digest > /tmp/first.digest
-          find production/generated production/docs production/src/gdmcp production/runtime -type f -print0 2>/dev/null \
-            | sort -z | xargs -0 sha256sum > /tmp/first.all-files.sha256
-          sha256sum production/ggen.lock >> /tmp/first.all-files.sha256
+        run: python3 production/ggen/verify_generated.py --digest > /tmp/first.digest
       - name: Re-run manufacture for idempotence
         run: bash production/ggen/manufacture.sh
-      - name: Build replay diagnostics
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p production/replay-debug
-          python3 production/ggen/verify_generated.py --digest > /tmp/second.digest
-          find production/generated production/docs production/src/gdmcp production/runtime -type f -print0 2>/dev/null \
-            | sort -z | xargs -0 sha256sum > /tmp/second.all-files.sha256
-          sha256sum production/ggen.lock >> /tmp/second.all-files.sha256
-          cp /tmp/first.digest production/replay-debug/first.digest
-          cp /tmp/second.digest production/replay-debug/second.digest
-          cp /tmp/first.all-files.sha256 production/replay-debug/first.all-files.sha256
-          cp /tmp/second.all-files.sha256 production/replay-debug/second.all-files.sha256
-          diff -u /tmp/first.all-files.sha256 /tmp/second.all-files.sha256 > production/replay-debug/all-files.diff || true
-          diff -u /tmp/first.digest /tmp/second.digest > production/replay-debug/digest.diff || true
       - name: Prove deterministic replay and verify invocation receipts
         shell: bash
         run: |
           set -euo pipefail
+          python3 production/ggen/verify_generated.py --digest > /tmp/second.digest
           diff -u /tmp/first.digest /tmp/second.digest
           python3 production/ggen/verify_generated.py | tee production/generated/manufacture-receipt.json
-      - name: Upload replay diagnostics
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        with:
-          name: production-replay-debug-${{ github.event.pull_request.head.sha || github.sha }}
-          if-no-files-found: error
-          retention-days: 3
-          path: production/replay-debug/
       - name: Upload manufactured consequences
-        if: success()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: production-ggen-consequences-${{ github.event.pull_request.head.sha || github.sha }}
