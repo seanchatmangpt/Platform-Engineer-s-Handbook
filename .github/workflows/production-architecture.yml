@@ -20,6 +20,9 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      PRODUCTION_SUBJECT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PRODUCTION_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
     steps:
       - name: Checkout exact consumer subject
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
@@ -31,7 +34,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          expected="${{ github.event.pull_request.head.sha || github.sha }}"
+          expected="$PRODUCTION_SUBJECT_SHA"
           actual="$(git rev-parse HEAD)"
           [[ "$actual" == "$expected" ]] || { echo "REFUSED:EXACT_HEAD_MISMATCH:actual=$actual:expected=$expected" >&2; exit 2; }
       - name: Checkout admitted ggen marketplace
@@ -83,7 +86,7 @@ jobs:
       - name: Upload manufactured consequences
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: production-ggen-consequences-${{ github.sha }}
+          name: production-ggen-consequences-${{ github.event.pull_request.head.sha || github.sha }}
           if-no-files-found: error
           retention-days: 14
           path: |
