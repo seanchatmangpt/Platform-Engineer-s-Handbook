@@ -1,0 +1,36 @@
+---
+to: generated/platform.openapi.yaml
+force: true
+sparql:
+  capabilities: |
+    PREFIX f5: <http://seanchatmangpt.github.io/packs/fortune5-architecture#>
+    PREFIX peh: <https://seanchatmangpt.github.io/Platform-Engineer-s-Handbook/production#>
+    SELECT ?id ?operation WHERE { ?c a peh:PlatformCapability ; f5:capabilityId ?id ; peh:operation ?operation . } ORDER BY ?id
+---
+openapi: 3.1.0
+info:
+  title: Platform Engineering Production Intent API
+  version: 1.0.0
+paths:
+  /v1/intents:
+    post:
+      operationId: submitPlatformIntent
+      description: Constructs an intent. Actuation requires admission and BRCE receipt.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [capability_id, intent_id, subject, payload]
+              properties:
+                capability_id:
+                  type: string
+                  enum:
+{% for row in capabilities %}                    - {{ row.id }}
+{% endfor %}                intent_id: {type: string}
+                subject: {type: string}
+                payload: {type: object}
+      responses:
+        '202': {description: Intent accepted for admission evaluation}
+        '403': {description: REFUSED by admission policy}

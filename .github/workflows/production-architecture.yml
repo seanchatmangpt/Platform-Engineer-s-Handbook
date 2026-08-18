@@ -19,12 +19,69 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout exact consumer subject
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Assert exact consumer identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="${{ github.event.pull_request.head.sha || github.sha }}"
+          actual="$(git rev-parse HEAD)"
+          [[ "$actual" == "$expected" ]] || { echo "REFUSED:EXACT_HEAD_MISMATCH:actual=$actual:expected=$expected" >&2; exit 2; }
+      - name: Checkout admitted ggen marketplace
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          repository: seanchatmangpt/ggen-marketplace
+          ref: 1de960e783ee62e5db34392bc38db4541e464a54
+          path: production/ggen-marketplace
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
-      - name: Verify production architecture closure
+      - name: Install pinned BLAKE3 runtime
+        run: python3 -m pip install --disable-pip-version-check 'blake3==1.0.9'
+      - name: Admit source manufacturing closure
         run: python3 production/verify.py
-      - name: Run production architecture tests
+      - name: Install digest-pinned ggen
+        shell: bash
+        run: |
+          set -euo pipefail
+          GGEN_BIN="$(bash production/ggen-marketplace/scripts/install-ggen.sh)"
+          echo "GGEN_BIN=${GGEN_BIN}" >> "$GITHUB_ENV"
+          "$GGEN_BIN" --version
+      - name: Manufacture production consequences
+        run: bash production/ggen/manufacture.sh
+      - name: Verify generated consequences
+        run: python3 production/verify.py --require-generated
+      - name: Run production tests
         run: python3 -m unittest production.tests.test_production -v
+      - name: Capture first generation digest
+        run: python3 production/ggen/verify_generated.py --digest > /tmp/first.digest
+      - name: Re-run manufacture for idempotence
+        run: bash production/ggen/manufacture.sh
+      - name: Prove byte-stable consequences
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 production/ggen/verify_generated.py --digest > /tmp/second.digest
+          diff -u /tmp/first.digest /tmp/second.digest
+          python3 production/ggen/verify_generated.py | tee production/generated/manufacture-receipt.json
+      - name: Upload manufactured consequences
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: production-ggen-consequences-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            production/runtime/generated_platform.py
+            production/runtime/dfcm_generated.py
+            production/generated/
+            production/docs/
+            production/src/gdmcp/
+            production/ggen.lock

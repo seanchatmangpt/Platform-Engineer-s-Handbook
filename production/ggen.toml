@@ -1,0 +1,20 @@
+[project]
+name = "platform-engineers-handbook-production"
+
+[ontology]
+source = "ggen/domain.ttl"
+
+[ontology.prefixes]
+peh = "https://seanchatmangpt.github.io/Platform-Engineer-s-Handbook/production#"
+f5 = "http://seanchatmangpt.github.io/packs/fortune5-architecture#"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+
+[packs]
+fortune5-architecture-pack = { path = "ggen-marketplace/packs/fortune5-architecture-pack" }
+gdmcp-pack = { path = "ggen-marketplace/packs/gdmcp-pack" }
+
+[templates]
+dir = "ggen/templates"
+
+[law]
+reflexive = false

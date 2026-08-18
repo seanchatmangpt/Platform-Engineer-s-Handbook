@@ -1,0 +1,31 @@
+{
+  "ggen": {
+    "commit": "402cecdff8784767eb9f26e235d87c759610c066",
+    "linux_x86_64": {
+      "asset": "ggen-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "790f8eab8b038e746af45cf70adde47c0df65fbcc5514c2c6ac8e5f80b2fe792"
+    },
+    "repository": "seanchatmangpt/ggen",
+    "version": "v26.8.11"
+  },
+  "marketplace": {
+    "commit": "1de960e783ee62e5db34392bc38db4541e464a54",
+    "repository": "seanchatmangpt/ggen-marketplace",
+    "version": "v26.8.10"
+  },
+  "packs": {
+    "dfcm-pack": {
+      "mode": "project",
+      "tree": "1013f463a6ade98ed3e93d6d64e5826a42776df1"
+    },
+    "fortune5-architecture-pack": {
+      "mode": "consumer",
+      "tree": "bf7f9725ed4062c3d5fc0dd13ba6acab34177811"
+    },
+    "gdmcp-pack": {
+      "mode": "consumer",
+      "tree": "9b3e867b8a29beaa7ed9053e12cdc056a78f229c"
+    }
+  },
+  "schema_version": 1
+}

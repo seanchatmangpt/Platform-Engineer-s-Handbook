@@ -1,0 +1,24 @@
+---
+to: generated/platform-capabilities.json
+force: true
+sparql:
+  capabilities: |
+    PREFIX f5: <http://seanchatmangpt.github.io/packs/fortune5-architecture#>
+    PREFIX peh: <https://seanchatmangpt.github.io/Platform-Engineer-s-Handbook/production#>
+    SELECT ?id ?chapter ?title ?operation ?control WHERE {
+      ?c a peh:PlatformCapability ; f5:capabilityId ?id ; f5:title ?title ; peh:chapter ?chapter ; peh:operation ?operation ; peh:controlFamily ?control .
+    } ORDER BY ?chapter
+  channels: |
+    PREFIX peh: <https://seanchatmangpt.github.io/Platform-Engineer-s-Handbook/production#>
+    SELECT ?id ?protocol ?purpose WHERE { ?c a peh:InterfaceChannel ; peh:channelId ?id ; peh:protocol ?protocol ; peh:purpose ?purpose ; peh:ambientExecutionAuthority false . } ORDER BY ?id
+---
+{
+  "generated_by": "ggen",
+  "ambient_execution_authority": false,
+  "capabilities": [
+{% for row in capabilities %}    {"id":"{{ row.id }}","chapter":"{{ row.chapter }}","title":"{{ row.title }}","operation":"{{ row.operation }}","control_family":"{{ row.control }}"}{% if not loop.last %},{% endif %}
+{% endfor %}  ],
+  "channels": [
+{% for row in channels %}    {"id":"{{ row.id }}","protocol":"{{ row.protocol }}","purpose":"{{ row.purpose }}"}{% if not loop.last %},{% endif %}
+{% endfor %}  ]
+}
