@@ -1,164 +1,107 @@
 #!/usr/bin/env python3
+"""Measure AI impact from observed incident records.
+
+Records must come from an observed JSON/NDJSON incident export or an incident-management HTTP endpoint.
 """
-Chapter 14: Measure AI Impact on Platform Metrics
-===================================================
-Measures the impact of AI-augmented platform tools on key metrics
-including MTTR, alert-to-resolution time, and developer productivity.
+from __future__ import annotations
 
-Usage:
-    python measure-ai-impact.py [--demo]
-
-Prerequisites:
-    - Access to incident management data (or use --demo mode)
-"""
-
+import argparse
 import json
-import sys
-from datetime import datetime, timedelta
-from dataclasses import dataclass
-from typing import List
 import statistics
+import urllib.request
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Iterable, List
 
 
-@dataclass
+@dataclass(frozen=True)
 class Incident:
-    """Represents a platform incident with timing data."""
     id: str
-    severity: str               # P1, P2, P3
+    severity: str
     alert_time: datetime
-    ack_time: datetime          # When someone acknowledged
-    diagnosis_time: datetime    # When root cause identified
-    resolution_time: datetime   # When resolved
-    ai_assisted: bool           # Whether AI tools were used
+    ack_time: datetime
+    diagnosis_time: datetime
+    resolution_time: datetime
+    ai_assisted: bool
 
 
-def calculate_mttr(incidents: List[Incident]) -> dict:
-    """Calculate Mean Time to Resolution for AI vs non-AI incidents."""
-    ai_incidents = [i for i in incidents if i.ai_assisted]
-    manual_incidents = [i for i in incidents if not i.ai_assisted]
-
-    def avg_minutes(group, start_attr="alert_time", end_attr="resolution_time"):
-        if not group:
-            return 0
-        deltas = [(getattr(i, end_attr) - getattr(i, start_attr)).total_seconds() / 60 for i in group]
-        return statistics.mean(deltas)
-
-    ai_mttr = avg_minutes(ai_incidents)
-    manual_mttr = avg_minutes(manual_incidents)
-    improvement = ((manual_mttr - ai_mttr) / manual_mttr * 100) if manual_mttr > 0 else 0
-
-    return {
-        "ai_assisted_mttr_min": round(ai_mttr, 1),
-        "manual_mttr_min": round(manual_mttr, 1),
-        "improvement_pct": round(improvement, 1),
-        "ai_incident_count": len(ai_incidents),
-        "manual_incident_count": len(manual_incidents),
-    }
+def _dt(value: str) -> datetime:
+    normalized = value.replace("Z", "+00:00")
+    return datetime.fromisoformat(normalized)
 
 
-def calculate_alert_to_ack(incidents: List[Incident]) -> dict:
-    """Measure alert-to-acknowledgment time (triage speed)."""
-    ai = [i for i in incidents if i.ai_assisted]
-    manual = [i for i in incidents if not i.ai_assisted]
-
-    def avg_ack(group):
-        if not group:
-            return 0
-        return statistics.mean([(i.ack_time - i.alert_time).total_seconds() / 60 for i in group])
-
-    ai_ack = avg_ack(ai)
-    manual_ack = avg_ack(manual)
-    improvement = ((manual_ack - ai_ack) / manual_ack * 100) if manual_ack > 0 else 0
-
-    return {
-        "ai_avg_ack_min": round(ai_ack, 1),
-        "manual_avg_ack_min": round(manual_ack, 1),
-        "improvement_pct": round(improvement, 1),
-    }
+def _incident(row: dict[str, Any]) -> Incident:
+    required = ["id", "severity", "alert_time", "ack_time", "diagnosis_time", "resolution_time", "ai_assisted"]
+    missing = [key for key in required if key not in row]
+    if missing:
+        raise ValueError(f"incident record missing fields: {missing}")
+    incident = Incident(
+        id=str(row["id"]),
+        severity=str(row["severity"]),
+        alert_time=_dt(str(row["alert_time"])),
+        ack_time=_dt(str(row["ack_time"])),
+        diagnosis_time=_dt(str(row["diagnosis_time"])),
+        resolution_time=_dt(str(row["resolution_time"])),
+        ai_assisted=bool(row["ai_assisted"]),
+    )
+    if not (incident.alert_time <= incident.ack_time <= incident.diagnosis_time <= incident.resolution_time):
+        raise ValueError(f"non-monotonic incident timeline: {incident.id}")
+    return incident
 
 
-def calculate_diagnosis_speed(incidents: List[Incident]) -> dict:
-    """Measure time from ack to diagnosis (root cause identification)."""
-    ai = [i for i in incidents if i.ai_assisted]
-    manual = [i for i in incidents if not i.ai_assisted]
-
-    def avg_diag(group):
-        if not group:
-            return 0
-        return statistics.mean([(i.diagnosis_time - i.ack_time).total_seconds() / 60 for i in group])
-
-    ai_diag = avg_diag(ai)
-    manual_diag = avg_diag(manual)
-    improvement = ((manual_diag - ai_diag) / manual_diag * 100) if manual_diag > 0 else 0
-
-    return {
-        "ai_avg_diagnosis_min": round(ai_diag, 1),
-        "manual_avg_diagnosis_min": round(manual_diag, 1),
-        "improvement_pct": round(improvement, 1),
-    }
-
-
-def generate_demo_incidents() -> List[Incident]:
-    """Generate realistic demo incident data."""
-    base = datetime(2025, 1, 15, 8, 0)
-    incidents = []
-
-    # Manual incidents (before AI adoption)
-    for i in range(10):
-        alert = base + timedelta(days=i * 3, hours=i % 8)
-        incidents.append(Incident(
-            id=f"INC-{100+i}", severity=["P1", "P2", "P3"][i % 3],
-            alert_time=alert,
-            ack_time=alert + timedelta(minutes=12 + i * 2),
-            diagnosis_time=alert + timedelta(minutes=45 + i * 5),
-            resolution_time=alert + timedelta(minutes=90 + i * 10),
-            ai_assisted=False,
-        ))
-
-    # AI-assisted incidents (after AI adoption)
-    ai_base = base + timedelta(days=35)
-    for i in range(10):
-        alert = ai_base + timedelta(days=i * 3, hours=i % 8)
-        incidents.append(Incident(
-            id=f"INC-{200+i}", severity=["P1", "P2", "P3"][i % 3],
-            alert_time=alert,
-            ack_time=alert + timedelta(minutes=3 + i),
-            diagnosis_time=alert + timedelta(minutes=12 + i * 2),
-            resolution_time=alert + timedelta(minutes=30 + i * 5),
-            ai_assisted=True,
-        ))
-
+def load_incidents(source: str, token: str | None = None) -> List[Incident]:
+    if source.startswith(("https://", "http://")):
+        headers = {"Accept": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        request = urllib.request.Request(source, headers=headers, method="GET")
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    else:
+        text = Path(source).read_text(encoding="utf-8")
+        if source.endswith(".ndjson") or source.endswith(".jsonl"):
+            payload = [json.loads(line) for line in text.splitlines() if line.strip()]
+        else:
+            payload = json.loads(text)
+    if isinstance(payload, dict):
+        payload = payload.get("incidents")
+    if not isinstance(payload, list):
+        raise ValueError("incident source must be a JSON list or an object with an incidents list")
+    incidents = [_incident(row) for row in payload]
+    if not incidents:
+        raise ValueError("incident source contains no records")
     return incidents
 
 
-def print_report(incidents: List[Incident]):
-    """Print a comprehensive AI impact report."""
-    mttr = calculate_mttr(incidents)
-    ack = calculate_alert_to_ack(incidents)
-    diag = calculate_diagnosis_speed(incidents)
+def _average(group: Iterable[Incident], start: str, end: str) -> float:
+    values = [(getattr(item, end) - getattr(item, start)).total_seconds() / 60.0 for item in group]
+    return statistics.mean(values) if values else 0.0
 
-    print("\n" + "=" * 60)
-    print("  AI IMPACT ON PLATFORM METRICS")
-    print("=" * 60)
 
-    print(f"\n--- Mean Time to Resolution (MTTR) ---")
-    print(f"  Manual:      {mttr['manual_mttr_min']} min (n={mttr['manual_incident_count']})")
-    print(f"  AI-Assisted: {mttr['ai_assisted_mttr_min']} min (n={mttr['ai_incident_count']})")
-    print(f"  Improvement: {mttr['improvement_pct']}%")
+def _comparison(incidents: List[Incident], start: str, end: str) -> dict[str, float | int]:
+    ai = [item for item in incidents if item.ai_assisted]
+    manual = [item for item in incidents if not item.ai_assisted]
+    ai_value = _average(ai, start, end)
+    manual_value = _average(manual, start, end)
+    improvement = ((manual_value - ai_value) / manual_value * 100.0) if manual_value else 0.0
+    return {"ai_minutes": round(ai_value, 2), "manual_minutes": round(manual_value, 2), "improvement_pct": round(improvement, 2), "ai_count": len(ai), "manual_count": len(manual)}
 
-    print(f"\n--- Alert-to-Acknowledgment ---")
-    print(f"  Manual:      {ack['manual_avg_ack_min']} min")
-    print(f"  AI-Assisted: {ack['ai_avg_ack_min']} min")
-    print(f"  Improvement: {ack['improvement_pct']}%")
 
-    print(f"\n--- Diagnosis Speed ---")
-    print(f"  Manual:      {diag['manual_avg_diagnosis_min']} min")
-    print(f"  AI-Assisted: {diag['ai_avg_diagnosis_min']} min")
-    print(f"  Improvement: {diag['improvement_pct']}%")
+def report(incidents: List[Incident]) -> dict[str, Any]:
+    if not any(i.ai_assisted for i in incidents) or not any(not i.ai_assisted for i in incidents):
+        raise ValueError("impact comparison requires both AI-assisted and manual incidents")
+    return {"incident_count": len(incidents), "mttr": _comparison(incidents, "alert_time", "resolution_time"), "alert_to_ack": _comparison(incidents, "alert_time", "ack_time"), "ack_to_diagnosis": _comparison(incidents, "ack_time", "diagnosis_time")}
 
-    print(f"\n{'=' * 60}\n")
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Measure AI impact from observed incident records")
+    parser.add_argument("source", help="JSON/NDJSON file or HTTPS incident export endpoint")
+    parser.add_argument("--token", help="Bearer token for HTTPS source")
+    args = parser.parse_args()
+    print(json.dumps(report(load_incidents(args.source, args.token)), indent=2, sort_keys=True))
+    return 0
 
 
 if __name__ == "__main__":
-    incidents = generate_demo_incidents()
-    print_report(incidents)
+    raise SystemExit(main())

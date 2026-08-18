@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - 'production/**'
+      - 'Ch14/**'
       - 'PRODUCTION.md'
       - '.github/workflows/production-architecture.yml'
   push:
     branches: [main]
     paths:
       - 'production/**'
+      - 'Ch14/**'
       - 'PRODUCTION.md'
       - '.github/workflows/production-architecture.yml'
 
@@ -57,6 +59,8 @@ jobs:
         run: python3 -m pip install --disable-pip-version-check 'blake3==1.0.9'
       - name: Admit source manufacturing closure
         run: python3 production/verify.py
+      - name: Reject fake AI execution paths
+        run: python3 Ch14/test-ai-agents.py -v
       - name: Install digest-pinned ggen
         shell: bash
         env:
@@ -72,11 +76,11 @@ jobs:
         run: python3 production/verify.py --require-generated
       - name: Run production tests
         run: python3 -m unittest production.tests.test_production -v
-      - name: Capture first generation digest
+      - name: Capture deterministic code and topology digest
         run: python3 production/ggen/verify_generated.py --digest > /tmp/first.digest
       - name: Re-run manufacture for idempotence
         run: bash production/ggen/manufacture.sh
-      - name: Prove byte-stable consequences
+      - name: Prove deterministic replay and verify invocation receipts
         shell: bash
         run: |
           set -euo pipefail
@@ -92,6 +96,8 @@ jobs:
           path: |
             production/runtime/generated_platform.py
             production/runtime/dfcm_generated.py
+            production/runtime/persistent_ledger.py
+            production/runtime/platform_api.py
             production/generated/
             production/docs/
             production/src/gdmcp/
