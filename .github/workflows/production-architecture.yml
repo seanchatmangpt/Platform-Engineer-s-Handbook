@@ -77,7 +77,13 @@ jobs:
       - name: Run production tests
         run: python3 -m unittest production.tests.test_production -v
       - name: Capture deterministic code and topology digest
-        run: python3 production/ggen/verify_generated.py --digest > /tmp/first.digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 production/ggen/verify_generated.py --digest > /tmp/first.digest
+          find production/generated production/docs production/src/gdmcp production/runtime -type f -print0 2>/dev/null \
+            | sort -z | xargs -0 sha256sum > /tmp/first.all-files.sha256
+          sha256sum production/ggen.lock >> /tmp/first.all-files.sha256
       - name: Re-run manufacture for idempotence
         run: bash production/ggen/manufacture.sh
       - name: Prove deterministic replay and verify invocation receipts
@@ -85,6 +91,11 @@ jobs:
         run: |
           set -euo pipefail
           python3 production/ggen/verify_generated.py --digest > /tmp/second.digest
+          find production/generated production/docs production/src/gdmcp production/runtime -type f -print0 2>/dev/null \
+            | sort -z | xargs -0 sha256sum > /tmp/second.all-files.sha256
+          sha256sum production/ggen.lock >> /tmp/second.all-files.sha256
+          echo '--- changed generated files (diagnostic; invocation receipts may lawfully differ) ---'
+          diff -u /tmp/first.all-files.sha256 /tmp/second.all-files.sha256 || true
           diff -u /tmp/first.digest /tmp/second.digest
           python3 production/ggen/verify_generated.py | tee production/generated/manufacture-receipt.json
       - name: Upload manufactured consequences
