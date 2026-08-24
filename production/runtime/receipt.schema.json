@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seanchatmangpt.github.io/Platform-Engineer-s-Handbook/schemas/receipt.schema.json",
+  "title": "Platform Actuation Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["receipt_version", "receipt_id", "subject", "intent", "decision", "actuation", "evidence", "replay"],
+  "properties": {
+    "receipt_version": {"const": 1},
+    "receipt_id": {"type": "string", "minLength": 16},
+    "subject": {
+      "type": "object",
+      "required": ["kind", "id", "digest"],
+      "properties": {
+        "kind": {"type": "string"},
+        "id": {"type": "string"},
+        "digest": {"type": "string"}
+      }
+    },
+    "intent": {
+      "type": "object",
+      "required": ["id", "actor", "operation", "idempotency_key"],
+      "properties": {
+        "id": {"type": "string"},
+        "actor": {"type": "string"},
+        "operation": {"type": "string"},
+        "idempotency_key": {"type": "string"}
+      }
+    },
+    "decision": {
+      "type": "object",
+      "required": ["status", "controls"],
+      "properties": {
+        "status": {"enum": ["ADMITTED", "REFUSED", "BLOCKED"]},
+        "controls": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "actuation": {
+      "type": "object",
+      "required": ["executor", "status", "started_at", "finished_at"],
+      "properties": {
+        "executor": {"type": "string"},
+        "status": {"enum": ["NOT_RUN", "SUCCEEDED", "FAILED"]},
+        "started_at": {"type": ["string", "null"]},
+        "finished_at": {"type": ["string", "null"]}
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "digest"],
+        "properties": {
+          "type": {"type": "string"},
+          "digest": {"type": "string"},
+          "uri": {"type": "string"}
+        }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "required": ["replay_key", "replay_safe"],
+      "properties": {
+        "replay_key": {"type": "string"},
+        "replay_safe": {"type": "boolean"}
+      }
+    }
+  }
+}

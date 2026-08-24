@@ -1,0 +1,98 @@
+schema_version: 1
+kind: PlatformProductContract
+metadata:
+  name: enterprise-platform
+  version: 1.0.0
+consumers:
+  - stream-aligned-teams
+  - platform-operators
+  - security
+  - sre
+  - finops
+  - automation
+  - ai-agents
+interfaces:
+  portal:
+    authority: select-and-construct
+  cli:
+    authority: select-construct-request-actuation
+  api:
+    spec: OpenAPI
+    authority: request-actuation
+  events:
+    spec: AsyncAPI
+    authority: observe
+  mcp:
+    authority: observe-select-construct
+  a2a:
+    authority: observe-select-construct
+  gitops:
+    authority: desired-state-input
+actuation:
+  invariant: "No interface directly changes managed state."
+  path: [request, authenticate, authorize, validate, policy-evaluate, risk-classify, plan, actuate, receipt]
+  idempotency_required: true
+  replay_protection_required: true
+  dry_run_required_for_destructive_change: true
+service_tiers:
+  tier_0:
+    availability_target: 99.99
+    rto_minutes: 15
+    rpo_minutes: 5
+    multi_region: true
+  tier_1:
+    availability_target: 99.95
+    rto_minutes: 60
+    rpo_minutes: 15
+    multi_region: false
+  tier_2:
+    availability_target: 99.9
+    rto_minutes: 240
+    rpo_minutes: 60
+    multi_region: false
+golden_path_requirements:
+  required:
+    - ownership
+    - catalog-registration
+    - identity
+    - least-privilege-policy
+    - build-and-test
+    - sbom
+    - provenance
+    - vulnerability-policy
+    - deployment-strategy
+    - rollback
+    - telemetry
+    - slo
+    - cost-allocation
+    - backup-policy
+    - runbook
+  generated_from_canonical_model: true
+supply_chain:
+  immutable_artifacts: true
+  sbom_required: true
+  provenance_required: true
+  signature_required_for_production: true
+  admission_by_digest: true
+  mutable_tags_forbidden_in_production: true
+observability:
+  telemetry_protocol: OTLP
+  trace_context_required: true
+  deployment_marker_required: true
+  owner_label_required: true
+  service_tier_label_required: true
+finops:
+  owner_required: true
+  environment_required: true
+  service_required: true
+  budget_policy: enforce-before-scale-out-when-safe
+resilience:
+  slo_required_for_production: true
+  error_budget_policy_required: true
+  restore_test_required: true
+  chaos_scope: preproduction-by-default
+ai:
+  ambient_execution_authority: false
+  output_types: [observation, diagnosis, plan, intent]
+  direct_shell_or_cloud_credentials: forbidden
+  production_action: admission-gated
