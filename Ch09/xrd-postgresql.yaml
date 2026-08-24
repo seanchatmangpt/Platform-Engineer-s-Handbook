@@ -54,6 +54,35 @@ spec:
                       default: true
                   required:
                     - tier
+                publishConnectionDetailsTo:
+                  type: object
+                  description: Where to write the composite's connection secret (Crossplane v2 claims use this instead of writeConnectionSecretToRef)
+                  properties:
+                    name:
+                      type: string
+                    configRef:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          default: default
+                      default:
+                        name: default
+                    metadata:
+                      type: object
+                      properties:
+                        labels:
+                          type: object
+                          additionalProperties:
+                            type: string
+                        annotations:
+                          type: object
+                          additionalProperties:
+                            type: string
+                        type:
+                          type: string
+                  required:
+                    - name
               required:
                 - parameters
             status:

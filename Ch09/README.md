@@ -11,6 +11,24 @@ By the end of this chapter, you will be able to:
 - Manage infrastructure dependencies and lifecycle automation
 - Add a database to the demo application using configuration-driven deployment
 
+## Known Issues Fixed in This Branch
+
+This branch fixes three issues found running this chapter's Crossplane examples end-to-end on a real Kind cluster:
+
+1. **`crossplane-providers.yaml` failed with `no matches for kind "ProviderConfig"`.** The original file bundled `Provider` and `ProviderConfig` resources in one manifest. On a fresh cluster, a `ProviderConfig`'s CRD doesn't exist until its `Provider` package finishes installing, so applying both together in one `kubectl apply` fails the `ProviderConfig` half. Fixed by splitting the file: `crossplane-providers.yaml` now contains only `Provider`/`DeploymentRuntimeConfig`/`Function` resources, and a new `crossplane-provider-configs.yaml` holds the `ProviderConfig` resources. Apply order:
+   ```bash
+   kubectl apply -f crossplane-providers.yaml
+   kubectl wait --for=condition=Healthy provider.pkg.crossplane.io/provider-kubernetes --timeout=180s
+   kubectl wait --for=condition=Healthy provider.pkg.crossplane.io/provider-helm --timeout=180s
+   kubectl apply -f crossplane-provider-configs.yaml
+   ```
+
+2. **PostgreSQL claims failed with `unknown field "spec.publishConnectionDetailsTo"`.** The PostgreSQL XRD's OpenAPI schema didn't declare `publishConnectionDetailsTo`, which Crossplane v2 claims use in place of the older `writeConnectionSecretToRef`. Fixed by adding the `publishConnectionDetailsTo` schema block to `xrd-postgresql.yaml`.
+
+3. **Composed resources failed with `cannot get resource "persistentvolumeclaims" ... forbidden`.** Nothing granted `provider-kubernetes`'s service account permission to manage the resources (Namespace, PVC, Deployment, Service) this chapter's compositions create. Fixed by adding `provider-kubernetes-rbac.yaml`, a declarative `ClusterRoleBinding` that binds `cluster-admin` to the `system:serviceaccounts:crossplane-system` group — a group subject survives the provider's revision-hashed service account name, so it doesn't need to be looked up at apply time.
+
+Step 2.4 ("Grant RBAC to the Kubernetes Provider" via `kubectl create clusterrolebinding`) and the "apply `crossplane-providers.yaml` twice" workaround described in Phase 2 below are the manual, imperative versions of fixes 1 and 3. They still work, but `provider-kubernetes-rbac.yaml` and the `crossplane-providers.yaml` / `crossplane-provider-configs.yaml` split make them declarative and repeatable with a plain `kubectl apply -f`.
+
 ## Code-to-Chapter Mapping
 
 This directory contains all code listings and exercises from Chapter 9, organized by concept area. The mapping below connects each file to specific sections and listings in the manuscript.

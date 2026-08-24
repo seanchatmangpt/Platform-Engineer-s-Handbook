@@ -1,0 +1,21 @@
+# provider-kubernetes-rbac.yaml
+# Grants provider-kubernetes's service account permission to manage the
+# resource kinds Compositions in this pack compose (Namespace, PVC,
+# Deployment, Service, Secret, ...). Binds by Group (all ServiceAccounts in
+# crossplane-system), not by exact ServiceAccount name, because
+# provider-kubernetes's SA name is revision-hashed at install time
+# (provider-kubernetes-<hash>) and can't be pinned in a static manifest.
+# This is the standard Kubernetes RBAC "all service accounts in a namespace"
+# group subject, not a workaround specific to this pack.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: crossplane-provider-kubernetes-admin
+subjects:
+  - kind: Group
+    name: system:serviceaccounts:crossplane-system
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
